@@ -1,57 +1,101 @@
-// import logo from './logo.svg';
-import './App.css';
-import React, { useState } from "react";
-import { DraggableArea } from 'react-draggable-tags';
-
-import "rsuite/dist/rsuite.min.css";
-import { AutoComplete, IconButton } from 'rsuite';
+import React, { forwardRef, useState } from "react";
+import "./index.css";
+import { ReactSortable } from "react-sortablejs";
+import { AutoComplete, IconButton, Tag, TagGroup } from "rsuite";
+import "../node_modules/rsuite/dist/rsuite.min.css";
 import { Plus } from '@rsuite/icons';
 
-const App = () => {
+const CustomComponent = forwardRef((props, ref) => {
+  return (
+    <div
+      className="forward-ref"
+      style={{
+        boxSizing: "border-box",
+        padding: "5px",
+        border: "1px solid green"
+      }}
+      ref={ref}
+    >
+      {props.children}
+    </div>
+  );
+});
 
-  const [tags, setTags] = useState([
-    { id: 1, content: 'apple' }, { id: 2, content: 'olive' }, { id: 3, content: 'banana' },
-    { id: 4, content: 'lemon' }, { id: 5, content: 'orange' }, { id: 6, content: 'add' }
+export const App = () => {
+  const [state, setState] = useState([
+    { id: 1, name: "1" },
+    { id: 2, name: "2" },
+    { id: 3, name: "3" },
   ]);
 
-  const [addTag, setAddTag] = useState(false);
+  const [typing, setTyping] = React.useState(false);
 
-  const clickAddTag = () => {
-    setAddTag(true)
-  }
+  const handleTagRemove = (id) => {
+    const nextTags = state.filter((item) => item.id !== id);
+    setState(nextTags);
+  };
 
-  const handleAddTag = (v) => {
-    if (v.target.value.length) {
-      const _id = tags.length + 1;
-      tags.push({ id: _id, content: v.target.value });
-      fixTags(tags);
+  const handleInputConfirm = (e) => {
+    const tmp = e.target.value
+    let nextTags = state;
+    nextTags.push({id: nextTags.length+1, name:tmp});
+    setState(nextTags);
+    setTyping(false);
+  };
+
+  const handleInputSelect = (e) => {
+    const tmp = e
+    let nextTags = state;
+    nextTags.push({id: nextTags.length+1, name:tmp});
+    setState(nextTags);
+    setTyping(false);
+  };
+
+  const handleButtonClick = () => {
+    setTyping(true);
+  };
+
+  const renderInput = () => {
+    if (typing) {
+      return (
+        <AutoComplete
+          className="tag-input"
+          size="xs"
+          style={{ width: 70 }}
+          onPressEnter={handleInputConfirm}
+          onSelect={handleInputSelect}
+        />
+      );
     }
-    setAddTag(false)
-  }
 
-  const fixTags = (t) => {
-    var tmp = t.filter(v => v.content !== 'add')
-    setTags([...tmp, { id: 6, content: 'add' }])
-  }
+    return (
+      <IconButton
+        className="tag-add-btn"
+        onClick={handleButtonClick}
+        icon={<Plus />}
+        appearance="ghost"
+        size="xs"
+      />
+    );
+  };
 
   return (
-    <div>
-      <DraggableArea
-        tags={tags}
-        isList={false}
-        render={({ tag, index }) => {
-          if (tag.content !== 'add') {
-            return <div key={index.toString()} className="tag">
-              {tag.content}
-            </div>
-          }
-          return addTag ? <AutoComplete autoFocus={true} onPressEnter={handleAddTag} /> : <IconButton onClick={clickAddTag} className="tag" key={index.toString()} icon={<Plus />} />;
+    <TagGroup>
+      <ReactSortable
+        expand={false}
+        tag={CustomComponent}
+        list={state}
+        setList={setState}
+        onChange={(e)=>{
+          console.log(JSON.stringify(state));
         }}
-        onChange={_tags => {
-          fixTags(_tags)
-        }}
-      />
-    </div>
+      >
+        {state.map((item) => (
+          <Tag className="childer" key={item.id} closable onClose={() => handleTagRemove(item.id)}>{item.name}</Tag>
+        ))}
+        {renderInput()}
+      </ReactSortable>
+    </TagGroup>
   );
 };
 
